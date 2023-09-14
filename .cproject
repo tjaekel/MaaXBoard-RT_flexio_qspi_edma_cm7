@@ -289,7 +289,7 @@
 								<option id="com.crt.advproject.link.gcc.lto.418287344" name="Enable Link-time optimization (-flto)" superClass="com.crt.advproject.link.gcc.lto"/>
 								<option id="com.crt.advproject.link.gcc.lto.optmization.level.1771840721" name="Link-time optimization level" superClass="com.crt.advproject.link.gcc.lto.optmization.level"/>
 								<option id="com.crt.advproject.link.manage.1209739440" name="Manage linker script" superClass="com.crt.advproject.link.manage" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.link.script.2039097453" name="Linker script" superClass="com.crt.advproject.link.script" value="&quot;MaaXBoard-RT_flexio_qspi_edma_cm7_Debug.ld&quot;" valueType="string"/>
+								<option id="com.crt.advproject.link.script.2039097453" name="Linker script" superClass="com.crt.advproject.link.script" value="MaaXBoard-RT_flexio_qspi_edma_cm7_Debug.ld" valueType="string"/>
 								<option id="com.crt.advproject.link.scriptdir.1581147134" name="Script path" superClass="com.crt.advproject.link.scriptdir"/>
 								<option id="com.crt.advproject.link.crpenable.1824856692" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.crpenable"/>
 								<option id="com.crt.advproject.link.flashconfigenable.1797299107" name="Enable automatic placement of Flash Configuration field in image" superClass="com.crt.advproject.link.flashconfigenable" value="true" valueType="boolean"/>
@@ -622,7 +622,7 @@
 								<option id="com.crt.advproject.link.gcc.lto.optmization.level.1984366888" name="Link-time optimization level" superClass="com.crt.advproject.link.gcc.lto.optmization.level"/>
 								<option id="com.crt.advproject.link.fpu.1710956880" name="Floating point" superClass="com.crt.advproject.link.fpu" value="com.crt.advproject.link.fpu.fpv5dp.hard" valueType="enumerated"/>
 								<option id="com.crt.advproject.link.manage.2129124109" name="Manage linker script" superClass="com.crt.advproject.link.manage" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.link.script.1307158462" name="Linker script" superClass="com.crt.advproject.link.script" value="&quot;MaaXBoard-RT_flexio_qspi_edma_cm7_Release.ld&quot;" valueType="string"/>
+								<option id="com.crt.advproject.link.script.1307158462" name="Linker script" superClass="com.crt.advproject.link.script" value="MaaXBoard-RT_flexio_qspi_edma_cm7_Release.ld" valueType="string"/>
 								<option id="com.crt.advproject.link.scriptdir.1294473027" name="Script path" superClass="com.crt.advproject.link.scriptdir"/>
 								<option id="com.crt.advproject.link.crpenable.766036188" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.crpenable"/>
 								<option id="com.crt.advproject.link.flashconfigenable.2039952610" name="Enable automatic placement of Flash Configuration field in image" superClass="com.crt.advproject.link.flashconfigenable" value="true" valueType="boolean"/>

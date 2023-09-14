@@ -275,20 +275,19 @@ void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *ma
 
 #ifdef FLEXIO_QSPI
 #if 0
-    FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0] + 3, &shifterConfig);
-    shifterConfig.inputSource = kFLEXIO_ShifterInputFromNextShifterOutput;
-    FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0] + 2, &shifterConfig);
+    //use 2x 32bit shifters for Tx
+    shifterConfig.parallelWidth = 3;
     FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0] + 1, &shifterConfig);
+    shifterConfig.inputSource = kFLEXIO_ShifterInputFromNextShifterOutput;
 #endif
-    shifterConfig.parallelWidth = 4;
+    shifterConfig.parallelWidth = 3;		//for 4 lanes
     FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0], &shifterConfig);
 #else
     FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0], &shifterConfig);
 #endif
 
     /* 2. Configure the shifter 1 for rx. */
-    shifterConfig.parallelWidth = 1;
-    shifterConfig.inputSource = kFLEXIO_ShifterInputFromPin;
+    shifterConfig.parallelWidth = 0;
 
     shifterConfig.timerSelect  = base->timerIndex[0];
     shifterConfig.pinConfig    = kFLEXIO_PinConfigOutputDisabled;
@@ -330,7 +329,8 @@ void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *ma
     	timerDiv = timerDiv / 2U - 1U;
     /* High 8-bits are used to configure shift clock edges (transfer width) */
 #ifdef FLEXIO_QSPI
-    timerCmp = ((uint16_t)7) << 8U;
+    timerCmp = ((uint16_t)15) << 8U;
+    ////timerCmp = ((uint16_t)7) << 8U;
 #else
     timerCmp = ((uint16_t)masterConfig->dataMode * 2U - 1U) << 8U;
 #endif
