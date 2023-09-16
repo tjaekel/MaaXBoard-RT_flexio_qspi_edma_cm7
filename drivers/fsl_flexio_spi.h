@@ -244,7 +244,7 @@ extern "C" {
  * @param masterConfig Pointer to the flexio_spi_master_config_t structure.
  * @param srcClock_Hz FlexIO source clock in Hz.
 */
-void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *masterConfig, uint32_t srcClock_Hz);
+void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *masterConfig, uint32_t srcClock_Hz, int qspiDir);
 
 /*!
  * @brief Resets the FlexIO SPI timer and shifter config.

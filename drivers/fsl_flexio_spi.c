@@ -220,7 +220,7 @@ static void FLEXIO_SPI_TransferReceiveTransaction(FLEXIO_SPI_Type *base, flexio_
  * param masterConfig Pointer to the flexio_spi_master_config_t structure.
  * param srcClock_Hz FlexIO source clock in Hz.
 */
-void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *masterConfig, uint32_t srcClock_Hz)
+__attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *masterConfig, uint32_t srcClock_Hz, int qspiDir)
 {
     assert(base != NULL);
     assert(masterConfig != NULL);
@@ -253,9 +253,12 @@ void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *ma
     base->flexioBase->CTRL = ctrlReg;
 
     /* Do hardware configuration. */
-    /* 1. Configure the shifter 0 for tx. */
+    /* 1. Configure the shifter 0 for tx. ATT: we need this shifter for the clocking of SCLK! */
     shifterConfig.timerSelect = base->timerIndex[0];
-    shifterConfig.pinConfig   = kFLEXIO_PinConfigOutput;
+    if (qspiDir == 0)
+    	shifterConfig.pinConfig   = kFLEXIO_PinConfigOutput;
+    else
+    	shifterConfig.pinConfig   = kFLEXIO_PinConfigOutputDisabled;		//in receive mode still needed, but no output!
     shifterConfig.pinSelect   = base->SDOPinIndex;
     shifterConfig.pinPolarity = kFLEXIO_PinActiveHigh;
     shifterConfig.shifterMode = kFLEXIO_ShifterModeTransmit;
@@ -274,24 +277,17 @@ void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *ma
     }
 
 #ifdef FLEXIO_QSPI
-#if 0
-    //use 2x 32bit shifters for Tx
-    shifterConfig.parallelWidth = 3;
-    FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0] + 1, &shifterConfig);
-    shifterConfig.inputSource = kFLEXIO_ShifterInputFromNextShifterOutput;
-#endif
     shifterConfig.parallelWidth = 3;		//for 4 lanes
-    FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0], &shifterConfig);
-#else
-    FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0], &shifterConfig);
 #endif
+    FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[0], &shifterConfig);
 
+#ifndef FLEXIO_QSPI
     /* 2. Configure the shifter 1 for rx. */
     shifterConfig.parallelWidth = 0;
 
     shifterConfig.timerSelect  = base->timerIndex[0];
     shifterConfig.pinConfig    = kFLEXIO_PinConfigOutputDisabled;
-    shifterConfig.pinSelect    = base->SDIPinIndex;
+    shifterConfig.pinSelect    = base->SDOPinIndex;	//base->SDOPinIndex;		//base->SDIPinIndex;
     shifterConfig.pinPolarity  = kFLEXIO_PinActiveHigh;
     shifterConfig.shifterMode  = kFLEXIO_ShifterModeReceive;
     shifterConfig.inputSource  = kFLEXIO_ShifterInputFromPin;
@@ -307,6 +303,32 @@ void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *ma
     }
 
     FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[1], &shifterConfig);
+#else
+    if (qspiDir != 0)
+    {
+        /* 2. Configure the shifter 3 for quad rx. */
+        shifterConfig.parallelWidth = 3;
+
+        shifterConfig.timerSelect  = base->timerIndex[0];
+        shifterConfig.pinConfig    = kFLEXIO_PinConfigOutputDisabled;
+        shifterConfig.pinSelect    = base->SDOPinIndex;		//was: base->SDOPinIndex; but not consecutive possible
+        shifterConfig.pinPolarity  = kFLEXIO_PinActiveHigh;
+        shifterConfig.shifterMode  = kFLEXIO_ShifterModeReceive;
+        shifterConfig.inputSource  = kFLEXIO_ShifterInputFromPin;
+        shifterConfig.shifterStop  = kFLEXIO_ShifterStopBitDisable;
+        shifterConfig.shifterStart = kFLEXIO_ShifterStartBitDisabledLoadDataOnEnable;
+        if (masterConfig->phase == kFLEXIO_SPI_ClockPhaseFirstEdge)
+        {
+            shifterConfig.timerPolarity = kFLEXIO_ShifterTimerPolarityOnPositive;
+        }
+        else
+        {
+            shifterConfig.timerPolarity = kFLEXIO_ShifterTimerPolarityOnNegitive;
+        }
+
+        FLEXIO_SetShifterConfig(base->flexioBase, base->shifterIndex[1], &shifterConfig);
+    }
+#endif
 
     /*3. Configure the timer 0 for SCK. */
     timerConfig.triggerSelect   = FLEXIO_TIMER_TRIGGER_SEL_SHIFTnSTAT(base->shifterIndex[0]);
@@ -330,7 +352,6 @@ void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *ma
     /* High 8-bits are used to configure shift clock edges (transfer width) */
 #ifdef FLEXIO_QSPI
     timerCmp = ((uint16_t)15) << 8U;
-    ////timerCmp = ((uint16_t)7) << 8U;
 #else
     timerCmp = ((uint16_t)masterConfig->dataMode * 2U - 1U) << 8U;
 #endif

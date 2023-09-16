@@ -353,7 +353,7 @@ status_t FLEXIO_SPI_MasterTransferCreateHandleEDMA(FLEXIO_SPI_Type *base,
  * retval kStatus_InvalidArgument Input argument is invalid.
  * retval kStatus_FLEXIO_SPI_Busy FlexIO SPI is not idle, is running another transfer.
  */
-status_t FLEXIO_SPI_MasterTransferEDMA(FLEXIO_SPI_Type *base,
+__attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) status_t FLEXIO_SPI_MasterTransferEDMA(FLEXIO_SPI_Type *base,
                                        flexio_spi_master_edma_handle_t *handle,
                                        flexio_spi_transfer_t *xfer)
 {

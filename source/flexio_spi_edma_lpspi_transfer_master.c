@@ -55,8 +55,8 @@
 #define EXAMPLE_FLEXIO_SPI_DMA_LPSPI_BASEADDR DMA0
 #define FLEXIO_SPI_TX_DMA_LPSPI_CHANNEL       (0U)
 #define FLEXIO_SPI_RX_DMA_LPSPI_CHANNEL       (1U)
-#define FLEXIO_TX_SHIFTER_INDEX               0U
-#define FLEXIO_RX_SHIFTER_INDEX               2U
+#define FLEXIO_TX_SHIFTER_INDEX               0U			//SHIFTER0 for parallel output!
+#define FLEXIO_RX_SHIFTER_INDEX               3U			//SHIFTER3 for parallel input!
 #define EXAMPLE_TX_DMA_SOURCE                 (kDmaRequestMuxFlexIO2Request0Request1)
 #define EXAMPLE_RX_DMA_SOURCE                 (kDmaRequestMuxFlexIO2Request2Request3)
 
@@ -100,7 +100,7 @@ void FLEXIO_SPI_MasterUserCallback(FLEXIO_SPI_Type *base,
     isMasterTransferCompleted = true;
 }
 
-int main(void)
+__attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) int main(void)
 {
     uint32_t errorCount;
     uint32_t i;
@@ -143,7 +143,9 @@ int main(void)
     qspiDev.timerIndex[0]   = 0U;
     qspiDev.timerIndex[1]   = 1U;
 
-    FLEXIO_SPI_MasterInit(&qspiDev, &masterConfig, MASTER_FLEXIO_SPI_CLOCK_FREQUENCY);
+    /* ------------------------------------- QSPI WRITE --------------------------------- */
+
+    FLEXIO_SPI_MasterInit(&qspiDev, &masterConfig, MASTER_FLEXIO_SPI_CLOCK_FREQUENCY, 0);
 
     /* Set up the transfer data */
     for (i = 0U; i < TRANSFER_SIZE; i++)
@@ -182,7 +184,7 @@ int main(void)
 
     /*Start master transfer*/
     masterXfer.txData   = (uint8_t *)masterTxData;
-    masterXfer.rxData   = (uint8_t *)masterRxData;
+    masterXfer.rxData   = NULL;
 
 #ifdef WORD_SIZE_32
     masterXfer.dataSize = TRANSFER_SIZE * 4;
@@ -192,7 +194,7 @@ int main(void)
     masterXfer.flags    = kFLEXIO_SPI_csContinuous | kFLEXIO_SPI_8bitLsb;
 #endif
 
-    PRINTF("\r\nStart FLEXIO transaction...\r\n");
+    PRINTF("\r\nStart FLEXIO write transaction...\r\n");
     isMasterTransferCompleted = false;
     FLEXIO_SPI_MasterTransferEDMA(&qspiDev, &g_m_handle, &masterXfer);
 
@@ -200,6 +202,9 @@ int main(void)
     while (!isMasterTransferCompleted)
     {
     }
+
+#if 0
+    PRINTF("\r\n...End of transaction\r\n");
 
     errorCount = 0U;
     for (i = 0U; i < TRANSFER_SIZE; i++)
@@ -210,10 +215,46 @@ int main(void)
     	PRINTF("%02x ", masterRxData[i]);
 #endif
     }
+#endif
+
+    /* ------------------------------------- QSPI READ ---------------------------------- */
+
+    /* configure now for QSPI 4 lane read */
+    FLEXIO_SPI_MasterInit(&qspiDev, &masterConfig, MASTER_FLEXIO_SPI_CLOCK_FREQUENCY, 1);
+
+    /* wait to force input signals - continue with UART keypress */
+    ////GETCHAR();
+
+    /* start Rx DMA */
+    masterXfer.txData   = NULL;
+    masterXfer.rxData   = (uint8_t *)masterRxData;
+
+#if 0
+    PRINTF("\r\nStart FLEXIO read transaction...\r\n");
+#endif
+    isMasterTransferCompleted = false;
+    FLEXIO_SPI_MasterTransferEDMA(&qspiDev, &g_m_handle, &masterXfer);
+
+    /* Wait master has sent all data */
+    while (!isMasterTransferCompleted)
+    {
+    }
+
+    PRINTF("\r\n...End of transaction\r\n");
+
+    errorCount = 0U;
+    for (i = 0U; i < TRANSFER_SIZE; i++)
+    {
+    #ifdef WORD_SIZE_32
+    	PRINTF("%08x ", masterRxData[i]);
+    #else
+        PRINTF("%02x ", masterRxData[i]);
+    #endif
+    }
 
     FLEXIO_SPI_MasterDeinit(&qspiDev);
 
-    PRINTF("\r\n...End of transaction\r\n");
+    PRINTF("\r\n*** End of program ***\r\n");
 
     while (1)
     {

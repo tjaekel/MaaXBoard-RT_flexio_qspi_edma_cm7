@@ -244,7 +244,7 @@ uint32_t FLEXIO_GetShifterBufferAddress(FLEXIO_Type *base, flexio_shifter_buffer
  * param index Shifter index
  * param shifterConfig Pointer to flexio_shifter_config_t structure
 */
-void FLEXIO_SetShifterConfig(FLEXIO_Type *base, uint8_t index, const flexio_shifter_config_t *shifterConfig)
+__attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) void FLEXIO_SetShifterConfig(FLEXIO_Type *base, uint8_t index, const flexio_shifter_config_t *shifterConfig)
 {
     base->SHIFTCFG[index] = FLEXIO_SHIFTCFG_INSRC(shifterConfig->inputSource)
 #if FSL_FEATURE_FLEXIO_HAS_PARALLEL_WIDTH
@@ -289,7 +289,7 @@ void FLEXIO_SetShifterConfig(FLEXIO_Type *base, uint8_t index, const flexio_shif
  * param index Timer index
  * param timerConfig Pointer to the flexio_timer_config_t structure
 */
-void FLEXIO_SetTimerConfig(FLEXIO_Type *base, uint8_t index, const flexio_timer_config_t *timerConfig)
+__attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) void FLEXIO_SetTimerConfig(FLEXIO_Type *base, uint8_t index, const flexio_timer_config_t *timerConfig)
 {
     base->TIMCFG[index] =
         FLEXIO_TIMCFG_TIMOUT(timerConfig->timerOutput) | FLEXIO_TIMCFG_TIMDEC(timerConfig->timerDecrement) |
