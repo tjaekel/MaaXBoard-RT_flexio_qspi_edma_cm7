@@ -220,6 +220,10 @@ static void FLEXIO_SPI_TransferReceiveTransaction(FLEXIO_SPI_Type *base, flexio_
  * param masterConfig Pointer to the flexio_spi_master_config_t structure.
  * param srcClock_Hz FlexIO source clock in Hz.
 */
+
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
+
 __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *masterConfig, uint32_t srcClock_Hz, int qspiDir)
 {
     assert(base != NULL);
@@ -330,59 +334,82 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) void FLEXIO_SPI_MasterInit(FL
     }
 #endif
 
-    /*3. Configure the timer 0 for SCK. */
-    timerConfig.triggerSelect   = FLEXIO_TIMER_TRIGGER_SEL_SHIFTnSTAT(base->shifterIndex[0]);
-    timerConfig.triggerPolarity = kFLEXIO_TimerTriggerPolarityActiveLow;
-    timerConfig.triggerSource   = kFLEXIO_TimerTriggerSourceInternal;
-    timerConfig.pinConfig       = kFLEXIO_PinConfigOutput;
-    timerConfig.pinSelect       = base->SCKPinIndex;
-    timerConfig.pinPolarity     = kFLEXIO_PinActiveHigh;
-    timerConfig.timerMode       = kFLEXIO_TimerModeDual8BitBaudBit;
-    timerConfig.timerOutput     = kFLEXIO_TimerOutputZeroNotAffectedByReset;
-    timerConfig.timerDecrement  = kFLEXIO_TimerDecSrcOnFlexIOClockShiftTimerOutput;
-    timerConfig.timerReset      = kFLEXIO_TimerResetNever;
-    timerConfig.timerDisable    = kFLEXIO_TimerDisableOnTimerCompare;
-    timerConfig.timerEnable     = kFLEXIO_TimerEnableOnTriggerHigh;
-    timerConfig.timerStop       = kFLEXIO_TimerStopBitEnableOnTimerDisable;
-    timerConfig.timerStart      = kFLEXIO_TimerStartBitEnabled;
-    /* Low 8-bits are used to configure baudrate. */
-    timerDiv = (uint16_t)(srcClock_Hz / masterConfig->baudRate_Bps);
-    if (timerDiv > 1)
-    	timerDiv = timerDiv / 2U - 1U;
-    /* High 8-bits are used to configure shift clock edges (transfer width) */
+    if (qspiDir == 0)
+    {
+    	/* on DIR = 1 (READ) - we have already done */
+    	/*3. Configure the timer 0 for SCK. */
+    	timerConfig.triggerSelect   = FLEXIO_TIMER_TRIGGER_SEL_SHIFTnSTAT(base->shifterIndex[0]);
+    	timerConfig.triggerPolarity = kFLEXIO_TimerTriggerPolarityActiveLow;
+    	timerConfig.triggerSource   = kFLEXIO_TimerTriggerSourceInternal;
+    	timerConfig.pinConfig       = kFLEXIO_PinConfigOutput;
+    	timerConfig.pinSelect       = base->SCKPinIndex;
+    	timerConfig.pinPolarity     = kFLEXIO_PinActiveHigh;
+    	timerConfig.timerMode       = kFLEXIO_TimerModeDual8BitBaudBit;
+    	timerConfig.timerOutput     = kFLEXIO_TimerOutputZeroNotAffectedByReset;
+    	timerConfig.timerDecrement  = kFLEXIO_TimerDecSrcOnFlexIOClockShiftTimerOutput;
+    	timerConfig.timerReset      = kFLEXIO_TimerResetNever;
+    	timerConfig.timerDisable    = kFLEXIO_TimerDisableOnTimerCompare;
+    	timerConfig.timerEnable     = kFLEXIO_TimerEnableOnTriggerHigh;
+    	timerConfig.timerStop       = kFLEXIO_TimerStopBitEnableOnTimerDisable;
+    	timerConfig.timerStart      = kFLEXIO_TimerStartBitEnabled;
+    	/* Low 8-bits are used to configure baudrate. */
+    	timerDiv = (uint16_t)(srcClock_Hz / masterConfig->baudRate_Bps);
+    	if (timerDiv > 1)
+    		timerDiv = timerDiv / 2U - 1U;
+    	/* High 8-bits are used to configure shift clock edges (transfer width) */
 #ifdef FLEXIO_QSPI
-    timerCmp = ((uint16_t)15) << 8U;
+    	timerCmp = ((uint16_t)15) << 8U;
 #else
-    timerCmp = ((uint16_t)masterConfig->dataMode * 2U - 1U) << 8U;
+    	timerCmp = ((uint16_t)masterConfig->dataMode * 2U - 1U) << 8U;
 #endif
-    timerCmp |= timerDiv;
+    	timerCmp |= timerDiv;
 
-    timerConfig.timerCompare = timerCmp;
+    	timerConfig.timerCompare = timerCmp;
 
-    FLEXIO_SetTimerConfig(base->flexioBase, base->timerIndex[0], &timerConfig);
+    	FLEXIO_SetTimerConfig(base->flexioBase, base->timerIndex[0], &timerConfig);
 
 #if 1
-    /* 4. Configure the timer 1 for CSn. */
-    timerConfig.triggerSelect   = FLEXIO_TIMER_TRIGGER_SEL_TIMn(base->timerIndex[0]);
-    timerConfig.triggerPolarity = kFLEXIO_TimerTriggerPolarityActiveHigh;
-    timerConfig.triggerSource   = kFLEXIO_TimerTriggerSourceInternal;
-    timerConfig.pinConfig       = kFLEXIO_PinConfigOutput;
-    timerConfig.pinSelect       = base->CSnPinIndex;
-    timerConfig.pinPolarity     = kFLEXIO_PinActiveLow;
-    timerConfig.timerMode       = kFLEXIO_TimerModeSingle16Bit;
-    timerConfig.timerOutput     = kFLEXIO_TimerOutputOneNotAffectedByReset;
-    timerConfig.timerDecrement  = kFLEXIO_TimerDecSrcOnFlexIOClockShiftTimerOutput;
-    timerConfig.timerReset      = kFLEXIO_TimerResetNever;
-    timerConfig.timerDisable    = kFLEXIO_TimerDisableOnPreTimerDisable;
-    timerConfig.timerEnable     = kFLEXIO_TimerEnableOnPrevTimerEnable;
-    timerConfig.timerStop       = kFLEXIO_TimerStopBitDisabled;
-    timerConfig.timerStart      = kFLEXIO_TimerStartBitDisabled;
+    	/* 4. Configure the timer 1 for CSn. */
+    	timerConfig.triggerSelect   = FLEXIO_TIMER_TRIGGER_SEL_TIMn(base->timerIndex[0]);
+    	timerConfig.triggerPolarity = kFLEXIO_TimerTriggerPolarityActiveHigh;
+    	timerConfig.triggerSource   = kFLEXIO_TimerTriggerSourceInternal;
+    	timerConfig.pinConfig       = kFLEXIO_PinConfigOutput;
+    	timerConfig.pinSelect       = base->CSnPinIndex;
+    	timerConfig.pinPolarity     = kFLEXIO_PinActiveLow;
+    	timerConfig.timerMode       = kFLEXIO_TimerModeSingle16Bit;
+    	timerConfig.timerOutput     = kFLEXIO_TimerOutputOneNotAffectedByReset;
+    	timerConfig.timerDecrement  = kFLEXIO_TimerDecSrcOnFlexIOClockShiftTimerOutput;
+    	timerConfig.timerReset      = kFLEXIO_TimerResetNever;
+    	timerConfig.timerDisable    = kFLEXIO_TimerDisableOnPreTimerDisable;
+    	timerConfig.timerEnable     = kFLEXIO_TimerEnableOnPrevTimerEnable;
+    	timerConfig.timerStop       = kFLEXIO_TimerStopBitDisabled;
+    	timerConfig.timerStart      = kFLEXIO_TimerStartBitDisabled;
 
-    timerConfig.timerCompare = 0xFFFFU; /* Never compare. */
+    	timerConfig.timerCompare = 0xFFFFU; /* Never compare. */
 
-    FLEXIO_SetTimerConfig(base->flexioBase, base->timerIndex[1], &timerConfig);
+    	FLEXIO_SetTimerConfig(base->flexioBase, base->timerIndex[1], &timerConfig);
 #endif
+    }
 }
+
+/* these are hard-coded functions to configure a WRITE vs. READ, to keep the dleay between a WRITE + READ
+ * as shortest we can.
+ */
+__attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) void FLEXIO_QSPI_Write(FLEXIO_SPI_Type *base)
+{
+	base->flexioBase->SHIFTCTL[base->shifterIndex[0]] = 0x831802;
+	base->flexioBase->SHIFTCTL[base->shifterIndex[1]] = 0;
+	base->flexioBase->SHIFTCFG[base->shifterIndex[1]] = 0;
+}
+
+__attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) void FLEXIO_QSPI_Read(FLEXIO_SPI_Type *base)
+{
+	base->flexioBase->SHIFTCTL[base->shifterIndex[0]] = 0x801802;
+	base->flexioBase->SHIFTCTL[base->shifterIndex[1]] = 0x1801;
+	base->flexioBase->SHIFTCFG[base->shifterIndex[1]] = 0x30000;
+}
+
+#pragma GCC pop_options
 
 /*!
  * brief Resets the FlexIO SPI timer and shifter config.

@@ -143,8 +143,7 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) int main(void)
     qspiDev.timerIndex[0]   = 0U;
     qspiDev.timerIndex[1]   = 1U;
 
-    /* ------------------------------------- QSPI WRITE --------------------------------- */
-
+    /* configure all once, for a QSPI Write */
     FLEXIO_SPI_MasterInit(&qspiDev, &masterConfig, MASTER_FLEXIO_SPI_CLOCK_FREQUENCY, 0);
 
     /* Set up the transfer data */
@@ -181,6 +180,14 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) int main(void)
 
     /* Set up master transfer */
     FLEXIO_SPI_MasterTransferCreateHandleEDMA(&qspiDev, &g_m_handle, FLEXIO_SPI_MasterUserCallback, NULL, &txHandle, &rxHandle);
+
+    for (i = 0; i < 4; i++)
+    {
+    	/* let us test several WRITE + READ transactions */
+
+    /* ------------------------------------- QSPI WRITE --------------------------------- */
+    /* set config on FLEXIO2 for a WRITE */
+    FLEXIO_QSPI_Write(&qspiDev);
 
     /*Start master transfer*/
     masterXfer.txData   = (uint8_t *)masterTxData;
@@ -220,7 +227,9 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) int main(void)
     /* ------------------------------------- QSPI READ ---------------------------------- */
 
     /* configure now for QSPI 4 lane read */
-    FLEXIO_SPI_MasterInit(&qspiDev, &masterConfig, MASTER_FLEXIO_SPI_CLOCK_FREQUENCY, 1);
+    /* we just change the minimum what is needed for a QSPI Read, assuming all other is still correct */
+    ////FLEXIO_SPI_MasterInit(&qspiDev, &masterConfig, MASTER_FLEXIO_SPI_CLOCK_FREQUENCY, 1);
+    FLEXIO_QSPI_Read(&qspiDev);
 
     /* wait to force input signals - continue with UART keypress */
     ////GETCHAR();
@@ -240,8 +249,11 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) int main(void)
     {
     }
 
+    } //end of for
+
     PRINTF("\r\n...End of transaction\r\n");
 
+    /* print what we have received during the (last) read */
     errorCount = 0U;
     for (i = 0U; i < TRANSFER_SIZE; i++)
     {

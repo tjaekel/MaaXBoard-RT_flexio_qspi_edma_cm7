@@ -124,7 +124,10 @@ static void FLEXIO_SPI_RxEDMACallback(edma_handle_t *handle, void *param, bool t
     }
 }
 
-static status_t FLEXIO_SPI_EDMAConfig(FLEXIO_SPI_Type *base,
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
+
+__attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) static status_t FLEXIO_SPI_EDMAConfig(FLEXIO_SPI_Type *base,
                                       flexio_spi_master_edma_handle_t *handle,
                                       flexio_spi_transfer_t *xfer)
 {
@@ -270,6 +273,8 @@ static status_t FLEXIO_SPI_EDMAConfig(FLEXIO_SPI_Type *base,
     return kStatus_Success;
 }
 
+#pragma GCC pop_options
+
 /*!
  * brief Initializes the FlexIO SPI master eDMA handle.
  *
@@ -353,12 +358,18 @@ status_t FLEXIO_SPI_MasterTransferCreateHandleEDMA(FLEXIO_SPI_Type *base,
  * retval kStatus_InvalidArgument Input argument is invalid.
  * retval kStatus_FLEXIO_SPI_Busy FlexIO SPI is not idle, is running another transfer.
  */
+
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
+
 __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) status_t FLEXIO_SPI_MasterTransferEDMA(FLEXIO_SPI_Type *base,
                                        flexio_spi_master_edma_handle_t *handle,
                                        flexio_spi_transfer_t *xfer)
 {
+#if 0
     assert(handle != NULL);
     assert(xfer != NULL);
+#endif
 
     uint32_t dataMode  = 0;
     uint16_t timerCmp  = (uint16_t)base->flexioBase->TIMCMP[base->timerIndex[0]];
@@ -366,6 +377,7 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) status_t FLEXIO_SPI_MasterTra
 
     timerCmp &= 0x00FFU;
 
+#if 0
     /* Check if the device is busy. */
     if ((handle->txInProgress) || (handle->rxInProgress))
     {
@@ -377,6 +389,7 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) status_t FLEXIO_SPI_MasterTra
     {
         return kStatus_InvalidArgument;
     }
+#endif
 
     /* Timer1 controls the CS signal which enables/disables(asserts/deasserts) when timer0 enable/disable. Timer0
        enables when tx shifter is written and disables when timer compare. The timer compare event causes the
@@ -397,6 +410,7 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) status_t FLEXIO_SPI_MasterTra
             FLEXIO_TIMCFG_TSTOP(kFLEXIO_TimerStopBitEnableOnTimerDisable);
     }
 
+#ifndef FLEXIO_QSPI
     /* configure data mode. */
     if ((dataFormat == (uint8_t)kFLEXIO_SPI_8bitMsb) || (dataFormat == (uint8_t)kFLEXIO_SPI_8bitLsb))
     {
@@ -417,11 +431,12 @@ __attribute__((section(".ramfunc.$SRAM_ITC_cm7"))) status_t FLEXIO_SPI_MasterTra
 
     dataMode |= timerCmp;
 
-#ifndef FLEXIO_QSPI
     base->flexioBase->TIMCMP[base->timerIndex[0]] = dataMode;
 #endif
     return FLEXIO_SPI_EDMAConfig(base, handle, xfer);
 }
+
+#pragma GCC pop_options
 
 /*!
  * brief Gets the remaining bytes for FlexIO SPI eDMA transfer.

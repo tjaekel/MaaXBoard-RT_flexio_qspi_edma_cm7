@@ -253,6 +253,9 @@ void FLEXIO_SPI_MasterInit(FLEXIO_SPI_Type *base, flexio_spi_master_config_t *ma
  */
 void FLEXIO_SPI_MasterDeinit(FLEXIO_SPI_Type *base);
 
+void FLEXIO_QSPI_Write(FLEXIO_SPI_Type *base);
+void FLEXIO_QSPI_Read(FLEXIO_SPI_Type *base);
+
 /*!
  * @brief Gets the default configuration to configure the FlexIO SPI master. The configuration
  * can be used directly by calling the FLEXIO_SPI_MasterConfigure().
